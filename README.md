@@ -1,53 +1,80 @@
 
-# SQL Project: Data Analysis for Zomato - A Food Delivery Company
+# SQL-Based Data Analysis and Business Intelligence Project for Zomato Food Delivery Platform
 
-## Overview
+## Project Overview
 
-This project demonstrates my SQL problem-solving skills through the analysis of data for Zomato, a popular food delivery company in India. The project involves setting up the database, importing data, handling null values, and solving a variety of business problems using complex SQL queries.
+This project focuses on performing comprehensive SQL-based data analysis for a food delivery platform inspired by Zomato. The primary objective of this project was to analyze operational, customer, restaurant, delivery, and revenue-related data using structured SQL queries and relational database concepts.
 
-## Project Structure
+The project demonstrates practical implementation of:
 
-- **Database Setup:** Creation of the `zomato_db` database and the required tables.
-- **Data Import:** Inserting sample data into the tables.
-- **Data Cleaning:** Handling null values and ensuring data integrity.
-- **Business Problems:** Solving 20 specific business problems using SQL queries.
+- Database design
+- Relational data modeling
+- Data cleaning
+- SQL querying
+- Window functions
+- Common Table Expressions (CTEs)
+- Business intelligence reporting
+- Data-driven problem solving
+
+The project was developed using MySQL and includes multiple business case scenarios commonly faced by food delivery platforms.
+
+The overall workflow involved:
+
+- Creating the database schema
+- Establishing relationships between tables
+- Importing and validating data
+- Cleaning inconsistent records
+- Solving business problems using SQL
+- Generating analytical insights from transactional data
+
+This project helped strengthen practical SQL concepts including joins, aggregations, subqueries, ranking functions, analytical functions, and advanced reporting techniques.
+
+## Objectives of the Project
+
+The major objectives of this project are:
+- To design and manage a relational database system for a food delivery business.
+- To analyze customer ordering behavior and restaurant performance.
+- To evaluate rider efficiency and delivery operations.
+- To identify revenue trends and business growth patterns.
+- To generate actionable insights using SQL queries.
+- To apply advanced SQL concepts in real-world business scenarios.
+
+## Database Description
+
+The database consists of five interconnected tables that represent the core operations of a food delivery platform.
+
+![ERD](https://github.com/Vrushabh-Borkar/Zomato-SQL-Data-Analysis-Project-Report/blob/main/ERD.png)
 
 
-## Database Setup
 ```sql
 CREATE DATABASE zomato_db;
+
+USE zomato_db;
 ```
 
-### 1. Dropping Existing Tables
+### 1. Creating Tables
 ```sql
-DROP TABLE IF EXISTS deliveries;
-DROP TABLE IF EXISTS Orders;
-DROP TABLE IF EXISTS customers;
-DROP TABLE IF EXISTS restaurants;
-DROP TABLE IF EXISTS riders;
-
--- 2. Creating Tables
 CREATE TABLE restaurants (
-    restaurant_id SERIAL PRIMARY KEY,
+    restaurant_id INT PRIMARY KEY,
     restaurant_name VARCHAR(100) NOT NULL,
     city VARCHAR(50),
     opening_hours VARCHAR(50)
 );
 
 CREATE TABLE customers (
-    customer_id SERIAL PRIMARY KEY,
+    customer_id INT PRIMARY KEY,
     customer_name VARCHAR(100) NOT NULL,
     reg_date DATE
 );
 
 CREATE TABLE riders (
-    rider_id SERIAL PRIMARY KEY,
+    rider_id INT PRIMARY KEY,
     rider_name VARCHAR(100) NOT NULL,
     sign_up DATE
 );
 
 CREATE TABLE Orders (
-    order_id SERIAL PRIMARY KEY,
+    order_id INT PRIMARY KEY,
     customer_id INT,
     restaurant_id INT,
     order_item VARCHAR(255),
@@ -59,8 +86,9 @@ CREATE TABLE Orders (
     FOREIGN KEY (restaurant_id) REFERENCES restaurants(restaurant_id)
 );
 
+
 CREATE TABLE deliveries (
-    delivery_id SERIAL PRIMARY KEY,
+    delivery_id INT PRIMARY KEY,
     order_id INT,
     delivery_status VARCHAR(20) DEFAULT 'Pending',
     delivery_time TIME,
@@ -68,18 +96,29 @@ CREATE TABLE deliveries (
     FOREIGN KEY (order_id) REFERENCES Orders(order_id),
     FOREIGN KEY (rider_id) REFERENCES riders(rider_id)
 );
+
+SELECT * FROM restaurants;
+SELECT * FROM customers ;
+SELECT * FROM riders ;
+SELECT * FROM Orders ;
+SELECT * FROM deliveries ;
 ```
 
-## Data Import
+## Data Cleaning and Preparation
 
-## Data Cleaning and Handling Null Values
+Before performing analysis, several preprocessing and cleaning activities were conducted to ensure data quality and consistency.
 
-Before performing analysis, I ensured that the data was clean and free from null values where necessary. For instance:
+Data Cleaning Activities
+- Converted date formats into MySQL-compatible format (YYYY-MM-DD)
+- Standardized time format into 24-hour format
+- Removed inconsistent null values
+- Verified foreign key relationships
+- Validated duplicate records
+- Ensured data type compatibility
+- Checked delivery and order consistency
+- Handled missing delivery records
 
-```sql
-UPDATE orders
-SET total_amount = COALESCE(total_amount, 0);
-```
+Data integrity checks were also performed to avoid import and relational constraint issues.
 
 ## Business Problems Solved
 
@@ -87,27 +126,20 @@ SET total_amount = COALESCE(total_amount, 0);
 
 ```sql
 SELECT 
-	customer_name,
-	dishes,
-	total_orders
-FROM -- table name
-	(SELECT 
-		c.customer_id,
-		c.customer_name,
-		o.order_item as dishes,
-		COUNT(*) as total_orders,
-		DENSE_RANK() OVER(ORDER BY COUNT(*) DESC) as rank
-	FROM orders as o
-	JOIN
-	customers as c
-	ON c.customer_id = o.customer_id
-	WHERE 
-		o.order_date >= CURRENT_DATE - INTERVAL '1 Year'
-		AND 
-		c.customer_name = 'Arjun Mehta'
-	GROUP BY 1, 2, 3
-	ORDER BY 1, 4 DESC) as t1
-WHERE rank <= 5
+	c.customer_name,
+    o.order_item AS dishes,
+    COUNT(*) AS total_orders
+FROM orders AS o
+JOIN customers AS c
+ON C.customer_id = o.customer_id
+WHERE
+	o.order_date >= CURDATE() - INTERVAL 1 YEAR
+AND
+	c.customer_name = "Arjun Mehta"
+ GROUP BY o.order_item
+ ORDER BY total_orders DESC
+ LIMIT 5
+ ;
 ```
 
 ### 2. Popular Time Slots
@@ -118,36 +150,36 @@ WHERE rank <= 5
 ```sql
 -- Approach 1
 SELECT 
-	FLOOR(EXTRACT(HOUR FROM order_time)/2)*2 as start_time,
-	FLOOR(EXTRACT(HOUR FROM order_time)/2)*2 + 2 as end_time,
-	COUNT(*) as total_orders
-FROM orders
-GROUP BY 1, 2
-ORDER BY 3 DESC;
+    CASE
+        WHEN HOUR(order_time) BETWEEN 0 AND 1 THEN '00:00 - 01:59'
+        WHEN HOUR(order_time) BETWEEN 2 AND 3 THEN '02:00 - 03:59'
+        WHEN HOUR(order_time) BETWEEN 4 AND 5 THEN '04:00 - 05:59'
+        WHEN HOUR(order_time) BETWEEN 6 AND 7 THEN '06:00 - 07:59'
+        WHEN HOUR(order_time) BETWEEN 8 AND 9 THEN '08:00 - 09:59'
+        WHEN HOUR(order_time) BETWEEN 10 AND 11 THEN '10:00 - 11:59'
+        WHEN HOUR(order_time) BETWEEN 12 AND 13 THEN '12:00 - 13:59'
+        WHEN HOUR(order_time) BETWEEN 14 AND 15 THEN '14:00 - 15:59'
+        WHEN HOUR(order_time) BETWEEN 16 AND 17 THEN '16:00 - 17:59'
+        WHEN HOUR(order_time) BETWEEN 18 AND 19 THEN '18:00 - 19:59'
+        WHEN HOUR(order_time) BETWEEN 20 AND 21 THEN '20:00 - 21:59'
+        ELSE '22:00 - 23:59'
+    END AS time_slot,
+    COUNT(*) AS total_orders
+FROM Orders
+GROUP BY time_slot
+ORDER BY total_orders DESC;
 ```
 
 **Approach 2:**
 
 ```sql
-SELECT
-    CASE
-        WHEN EXTRACT(HOUR FROM order_time) BETWEEN 0 AND 1 THEN '00:00 - 02:00'
-        WHEN EXTRACT(HOUR FROM order_time) BETWEEN 2 AND 3 THEN '02:00 - 04:00'
-        WHEN EXTRACT(HOUR FROM order_time) BETWEEN 4 AND 5 THEN '04:00 - 06:00'
-        WHEN EXTRACT(HOUR FROM order_time) BETWEEN 6 AND 7 THEN '06:00 - 08:00'
-        WHEN EXTRACT(HOUR FROM order_time) BETWEEN 8 AND 9 THEN '08:00 - 10:00'
-        WHEN EXTRACT(HOUR FROM order_time) BETWEEN 10 AND 11 THEN '10:00 - 12:00'
-        WHEN EXTRACT(HOUR FROM order_time) BETWEEN 12 AND 13 THEN '12:00 - 14:00'
-        WHEN EXTRACT(HOUR FROM order_time) BETWEEN 14 AND 15 THEN '14:00 - 16:00'
-        WHEN EXTRACT(HOUR FROM order_time) BETWEEN 16 AND 17 THEN '16:00 - 18:00'
-        WHEN EXTRACT(HOUR FROM order_time) BETWEEN 18 AND 19 THEN '18:00 - 20:00'
-        WHEN EXTRACT(HOUR FROM order_time) BETWEEN 20 AND 21 THEN '20:00 - 22:00'
-        WHEN EXTRACT(HOUR FROM order_time) BETWEEN 22 AND 23 THEN '22:00 - 00:00'
-    END AS time_slot,
-    COUNT(order_id) AS order_count
-FROM Orders
-GROUP BY time_slot
-ORDER BY order_count DESC;
+SELECT 		
+		FLOOR(EXTRACT(HOUR FROM order_time)/2)*2 AS start_time,
+        FLOOR(EXTRACT(HOUR FROM order_time)/2)*2 + 2 AS end_time,
+		COUNT(*) AS total_orders
+FROM orders
+GROUP BY 1,2
+ORDER BY 3 DESC;
 ```
 
 ### 3. Order Value Analysis
@@ -156,14 +188,16 @@ ORDER BY order_count DESC;
 
 ```sql
 SELECT 
-	-- o.customer_id,
-	c.customer_name,
-	AVG(o.total_amount) as aov
-FROM orders as o
-	JOIN customers as c
+	o.customer_id,
+    c.customer_name,
+    AVG(o.total_amount) AS AOV,
+    COUNT(o.order_id) AS total_orders
+FROM orders AS o
+	JOIN customers AS c
 	ON c.customer_id = o.customer_id
 GROUP BY 1
-HAVING  COUNT(order_id) > 750;
+HAVING total_orders > 750
+; 
 ```
 
 ### 4. High-Value Customers
@@ -172,14 +206,17 @@ HAVING  COUNT(order_id) > 750;
 
 ```sql
 SELECT 
-	-- o.customer_id,
-	c.customer_name,
-	SUM(o.total_amount) as total_spent
-FROM orders as o
-	JOIN customers as c
+	o.customer_id,
+    c.customer_name,
+    SUM(o.total_amount) AS total_spent
+FROM orders AS o
+	JOIN customers AS c
 	ON c.customer_id = o.customer_id
 GROUP BY 1
-HAVING SUM(o.total_amount) > 100000;
+HAVING total_spent > 100000
+;
+
+SELECT * FROM orders;
 ```
 
 ### 5. Orders Without Delivery
@@ -187,33 +224,18 @@ HAVING SUM(o.total_amount) > 100000;
 -- Return each restuarant name, city and number of not delivered orders 
 
 ```sql
--- Approach 1
-SELECT 
-	r.restaurant_name,
-	COUNT(o.order_id) as cnt_not_delivered_orders
-FROM orders as o
-LEFT JOIN 
-restaurants as r
-ON r.restaurant_id = o.restaurant_id
-LEFT JOIN
-deliveries as d
-ON d.order_id = o.order_id
-WHERE d.delivery_id IS NULL
-GROUP BY 1
-ORDER BY 2 DESC
-
--- Approach 2
-SELECT 
-	r.restaurant_name,
-	COUNT(*)
-FROM orders as o
-LEFT JOIN 
-restaurants as r
-ON r.restaurant_id = o.restaurant_id
-WHERE 
-	o.order_id NOT IN (SELECT order_id FROM deliveries)
-GROUP BY 1
-ORDER BY 2 DESC
+SELECT
+		r.restaurant_name,
+        r.city,
+        COUNT(*) AS not_deliverd
+FROM orders AS o
+	JOIN restaurants AS r
+	ON o.restaurant_id = r.restaurant_id
+    JOIN deliveries AS d
+    ON o.order_id = d.order_id
+WHERE d.delivery_status != 'Delivered'
+GROUP BY 1,2
+ORDER BY not_deliverd DESC;
 ```
 
 
@@ -222,46 +244,32 @@ ORDER BY 2 DESC
 -- total revenue, and rank within their city.
 
 ```sql
-WITH ranking_table
-AS
-(
-	SELECT 
-		r.city,
-		r.restaurant_name,
-		SUM(o.total_amount) as revenue,
-		RANK() OVER(PARTITION BY r.city ORDER BY SUM(o.total_amount) DESC) as rank
-	FROM orders as o
-	JOIN 
-	restaurants as r
-	ON r.restaurant_id = o.restaurant_id
-	WHERE o.order_date >= CURRENT_DATE - INTERVAL '1 year'
-	GROUP BY 1, 2
-)
 SELECT 
-	*
-FROM ranking_table
-WHERE rank = 1;
-
+	r.restaurant_name,
+    r.city,
+    SUM(o.total_amount) AS revenue,
+    RANK() OVER (
+				  PARTITION BY r.city ORDER BY SUM(o.total_amount)DESC
+				) AS Ranks
+FROM restaurants AS r
+JOIN orders AS o
+ON r.restaurant_id = o.restaurant_id
+WHERE o.order_date >= CURDATE() - INTERVAL 1 YEAR
+GROUP BY 1,2 ;
 ```
 
 ### 7. Most Popular Dish by City: 
 -- Identify the most popular dish in each city based on the number of orders.
 
 ```sql
-SELECT * 
-FROM
-(SELECT 
+SELECT
 	r.city,
-	o.order_item as dish,
-	COUNT(order_id) as total_orders,
-	RANK() OVER(PARTITION BY r.city ORDER BY COUNT(order_id) DESC) as rank
-FROM orders as o
-JOIN 
-restaurants as r
-ON r.restaurant_id = o.restaurant_id
-GROUP BY 1, 2
-) as t1
-WHERE rank = 1;
+    o.order_item AS dish,
+    COUNT(o.order_id) AS total_orders
+FROM orders AS o
+JOIN restaurants r
+ON o.restaurant_id = r.restaurant_id
+GROUP BY 1, 2;
 ```
 
 ### 8. Customer Churn: 
@@ -269,12 +277,12 @@ WHERE rank = 1;
 
 ```sql
 SELECT DISTINCT customer_id FROM orders
-WHERE 
-	EXTRACT(YEAR FROM order_date) = 2023
-	AND
-	customer_id NOT IN 
-					(SELECT DISTINCT customer_id FROM orders
-					WHERE EXTRACT(YEAR FROM order_date) = 2024);
+WHERE EXTRACT(YEAR FROM order_date) = 2023
+AND
+	order_id NOT IN(
+					SELECT customer_id FROM orders
+                    WHERE EXTRACT(YEAR FROM order_date) = 2024
+					) ;
 ```
 
 ### 9. Cancellation Rate Comparison: 
@@ -282,52 +290,113 @@ WHERE
 -- current year and the previous year.
 
 ```sql
+-- Approch 1
+
+ WITH cancel_2023 AS (
+    SELECT 
+        o.restaurant_id,
+        COUNT(o.order_id) AS total_orders,
+        COUNT(CASE 
+                WHEN d.delivery_status <> 'Delivered' 
+                     OR d.delivery_id IS NULL 
+                THEN 1 
+              END) AS cancelled_orders
+    FROM Orders o
+    LEFT JOIN deliveries d
+        ON o.order_id = d.order_id
+    WHERE YEAR(o.order_date) = 2023
+    GROUP BY o.restaurant_id
+),
+
+cancel_2024 AS (
+    SELECT 
+        o.restaurant_id,
+        COUNT(o.order_id) AS total_orders,
+        COUNT(CASE 
+                WHEN d.delivery_status <> 'Delivered' 
+                     OR d.delivery_id IS NULL 
+                THEN 1 
+              END) AS cancelled_orders
+    FROM Orders o
+    LEFT JOIN deliveries d
+        ON o.order_id = d.order_id
+    WHERE YEAR(o.order_date) = 2024
+    GROUP BY o.restaurant_id
+)
+
+SELECT 
+    r.restaurant_name,
+    
+    ROUND((c23.cancelled_orders / c23.total_orders) * 100, 2) AS cancel_rate_2023,
+    
+    ROUND((c24.cancelled_orders / c24.total_orders) * 100, 2) AS cancel_rate_2024,
+    
+    ROUND(
+        ((c24.cancelled_orders / c24.total_orders) -
+         (c23.cancelled_orders / c23.total_orders)) * 100,
+        2
+    ) AS rate_difference
+FROM restaurants r
+LEFT JOIN cancel_2023 c23
+    ON r.restaurant_id = c23.restaurant_id
+LEFT JOIN cancel_2024 c24
+    ON r.restaurant_id = c24.restaurant_id;
+    
+-- Approch 2
+
 WITH cancel_ratio_23 AS (
     SELECT 
         o.restaurant_id,
         COUNT(o.order_id) AS total_orders,
-        COUNT(CASE WHEN d.delivery_id IS NULL THEN 1 END) AS not_delivered
-    FROM orders AS o
-    LEFT JOIN deliveries AS d
-    ON o.order_id = d.order_id
-    WHERE EXTRACT(YEAR FROM o.order_date) = 2023
+        COUNT(CASE 
+                WHEN d.delivery_id IS NULL 
+                     OR d.delivery_status <> 'Delivered'
+                THEN 1
+              END) AS not_delivered
+    FROM Orders o
+    LEFT JOIN deliveries d
+        ON o.order_id = d.order_id
+    WHERE YEAR(o.order_date) = 2023
     GROUP BY o.restaurant_id
 ),
+
 cancel_ratio_24 AS (
     SELECT 
         o.restaurant_id,
         COUNT(o.order_id) AS total_orders,
-        COUNT(CASE WHEN d.delivery_id IS NULL THEN 1 END) AS not_delivered
-    FROM orders AS o
-    LEFT JOIN deliveries AS d
-    ON o.order_id = d.order_id
-    WHERE EXTRACT(YEAR FROM o.order_date) = 2024
+        COUNT(CASE 
+                WHEN d.delivery_id IS NULL 
+                     OR d.delivery_status <> 'Delivered'
+                THEN 1
+              END) AS not_delivered
+    FROM Orders o
+    LEFT JOIN deliveries d
+        ON o.order_id = d.order_id
+    WHERE YEAR(o.order_date) = 2024
     GROUP BY o.restaurant_id
 ),
+
 last_year_data AS (
     SELECT 
         restaurant_id,
-        total_orders,
-        not_delivered,
-        ROUND((not_delivered::numeric / total_orders::numeric) * 100, 2) AS cancel_ratio
+        ROUND((not_delivered * 100.0 / total_orders), 2) AS cancel_ratio
     FROM cancel_ratio_23
 ),
+
 current_year_data AS (
     SELECT 
         restaurant_id,
-        total_orders,
-        not_delivered,
-        ROUND((not_delivered::numeric / total_orders::numeric) * 100, 2) AS cancel_ratio
+        ROUND((not_delivered * 100.0 / total_orders), 2) AS cancel_ratio
     FROM cancel_ratio_24
-)	
+)
 
 SELECT 
-    c.restaurant_id AS restaurant_id,
+    c.restaurant_id,
     c.cancel_ratio AS current_year_cancel_ratio,
     l.cancel_ratio AS last_year_cancel_ratio
-FROM current_year_data AS c
-JOIN last_year_data AS l
-ON c.restaurant_id = l.restaurant_id;
+FROM current_year_data c
+JOIN last_year_data l
+    ON c.restaurant_id = l.restaurant_id;
 ```
 
 ### 10. Rider Average Delivery Time: 
@@ -335,51 +404,60 @@ ON c.restaurant_id = l.restaurant_id;
 
 ```sql
 SELECT 
-    o.order_id,
-    o.order_time,
-    d.delivery_time,
-    d.rider_id,
-    d.delivery_time - o.order_time AS time_difference,
-	EXTRACT(EPOCH FROM (d.delivery_time - o.order_time + 
-	CASE WHEN d.delivery_time < o.order_time THEN INTERVAL '1 day' ELSE
-	INTERVAL '0 day' END))/60 as time_difference_insec
-FROM orders AS o
-JOIN deliveries AS d
-ON o.order_id = d.order_id
-WHERE d.delivery_status = 'Delivered';
+    r.rider_name,
+    AVG(
+        CASE
+            WHEN d.delivery_time >= o.order_time 
+            THEN 
+				TIMESTAMPDIFF(MINUTE, o.order_time, d.delivery_time)
+            ELSE 
+				TIMESTAMPDIFF(MINUTE, o.order_time, ADDTIME(d.delivery_time, '24:00:00'))
+			END
+    ) AS avg_delivery_time_minutes
+FROM riders r
+JOIN deliveries d
+    ON r.rider_id = d.rider_id
+JOIN Orders o
+    ON d.order_id = o.order_id
+WHERE d.delivery_status = 'Delivered'
+GROUP BY r.rider_name;
 ```
 
 ### 11. Monthly Restaurant Growth Ratio: 
 -- Calculate each restaurant's growth ratio based on the total number of delivered orders since its joining
 
 ```sql
-WITH growth_ratio
-AS
-(
-SELECT 
-	o.restaurant_id,
-	EXTRACT(YEAR FROM o.order_date) as year,
-	EXTRACT(MONTH FROM o.order_date) as month,
-	COUNT(o.order_id) as cr_month_orders,
-	LAG(COUNT(o.order_id), 1) OVER(PARTITION BY o.restaurant_id ORDER BY EXTRACT(YEAR FROM o.order_date),
-    EXTRACT(MONTH FROM o.order_date)) as prev_month_orders
-FROM orders as o
-JOIN
-deliveries as d
-ON o.order_id = d.order_id
-WHERE d.delivery_status = 'Delivered'
-GROUP BY 1, 2, 3
-ORDER BY 1, 2
+WITH growth_ratio AS (
+    SELECT 
+        o.restaurant_id,
+        YEAR(o.order_date) AS year,
+        MONTH(o.order_date) AS month,
+        COUNT(o.order_id) AS cr_month_orders,
+        
+        LAG(COUNT(o.order_id), 1) OVER (
+            PARTITION BY o.restaurant_id 
+            ORDER BY YEAR(o.order_date), MONTH(o.order_date)
+        ) AS prev_month_orders
+
+    FROM Orders o
+    JOIN deliveries d
+        ON o.order_id = d.order_id
+    WHERE d.delivery_status = 'Delivered'
+    GROUP BY o.restaurant_id, YEAR(o.order_date), MONTH(o.order_date)
 )
+
 SELECT
-	restaurant_id,
-	month,
-	prev_month_orders,
-	cr_month_orders,
-	ROUND(
-	(cr_month_orders::numeric-prev_month_orders::numeric)/prev_month_orders::numeric * 100
-	,2)
-	as growth_ratio
+    restaurant_id,
+    year,
+    month,
+    prev_month_orders,
+    cr_month_orders,
+
+    ROUND(
+        ((cr_month_orders - prev_month_orders) * 100.0) 
+        / NULLIF(prev_month_orders, 0),
+        2
+    ) AS growth_ratio
 FROM growth_ratio;
 ```
 
@@ -392,22 +470,25 @@ FROM growth_ratio;
 ```sql
 SELECT 
 	cx_category,
-	SUM(total_orders) as total_orders,
-	SUM(total_spent) as total_revenue
+    SUM(total_orders) AS total_orders,
+    SUM(total_spent) AS total_revenue
 FROM
-
-	(SELECT 
-		customer_id,
-		SUM(total_amount) as total_spent,
-		COUNT(order_id) as total_orders,
-		CASE 
-			WHEN SUM(total_amount) > (SELECT AVG(total_amount) FROM orders) THEN 'Gold'
-			ELSE 'silver'
-		END as cx_category
-	FROM orders
-	group by 1
-	) as t1
+(SELECT 
+	customer_id,
+	SUM(total_amount) AS total_spent,
+    COUNT(order_id) AS total_orders,
+	CASE WHEN SUM(total_amount) > (SELECT AVG(total_amount) FROM orders)
+    THEN "GOLD"
+    ELSE "SILVER"
+    END AS cx_category
+FROM orders 
+GROUP BY 1
+ORDER BY SUM(total_amount)DESC)
+AS teb1
 GROUP BY 1;
+
+SELECT AVG(total_amount) FROM orders;
+
 ```
 
 ### 13. Rider Monthly Earnings: 
@@ -415,15 +496,20 @@ GROUP BY 1;
 
 ```sql
 SELECT 
-	d.rider_id,
-	TO_CHAR(o.order_date, 'mm-yy') as month,
-	SUM(total_amount) as revenue,
-	SUM(total_amount)* 0.08 as riders_earning
-FROM orders as o
-JOIN deliveries as d
-ON o.order_id = d.order_id
-GROUP BY 1, 2
-ORDER BY 1, 2;
+		d.rider_id,
+		r.rider_name,
+        YEAR(o.order_date) AS year,
+        MONTH(o.order_date) AS month,
+        SUM(o.total_amount) AS order_amount,
+        SUM(o.total_amount) * 8 /100 AS riders_earning
+FROM orders AS o
+JOIN deliveries AS d
+ON o.order_id = d.order_id 
+LEFT JOIN riders AS r
+ON d.rider_id = r.rider_id
+WHERE d.delivery_status = "Delivered"
+GROUP BY 1,2, 3, 4
+ORDER BY 1, 2, 3, 4 ;
 ```
 
 ### Q.14 Rider Ratings Analysis: 
@@ -434,62 +520,39 @@ ORDER BY 1, 2;
 -- if they deliver after 20 minute they get 3 star rating.
 
 ```sql
-SELECT 
-	rider_id,
-	stars,
-	COUNT(*) as total_stars
-FROM
-(
-	SELECT
-		rider_id,
-		delivery_took_time,
-		CASE 
-			WHEN delivery_took_time < 15 THEN '5 star'
-			WHEN delivery_took_time BETWEEN 15 AND 20 THEN '4 star'
-			ELSE '3 star'
-		END as stars
-		
-	FROM
-	(
-		SELECT 
-			o.order_id,
-			o.order_time,
-			d.delivery_time,
-			EXTRACT(EPOCH FROM (d.delivery_time - o.order_time + 
-			CASE WHEN d.delivery_time < o.order_time THEN INTERVAL '1 day' 
-			ELSE INTERVAL '0 day' END
-			))/60 as delivery_took_time,
-			d.rider_id
-		FROM orders as o
-		JOIN deliveries as d
-		ON o.order_id = d.order_id
-		WHERE delivery_status = 'Delivered'
-	) as t1
-) as t2
-GROUP BY 1, 2
-ORDER BY 1, 3 DESC;
+SELECT
+    r.rider_id,
+    r.rider_name,
+    o.order_id,
+    CASE
+        WHEN TIMESTAMPDIFF(MINUTE, o.order_time, d.delivery_time) < 15
+            THEN 'five_star'
+        WHEN TIMESTAMPDIFF(MINUTE, o.order_time, d.delivery_time) BETWEEN 15 AND 20
+            THEN 'four_star'
+        ELSE 'three_star'
+    END AS rating
+FROM Orders o
+JOIN deliveries d
+    ON o.order_id = d.order_id
+JOIN riders r
+    ON d.rider_id = r.rider_id
+WHERE d.delivery_status = 'Delivered';
 ```
 
 ### 15. Q.15 Order Frequency by Day: 
 -- Analyze order frequency per day of the week and identify the peak day for each restaurant.
 
 ```sql
-SELECT * FROM
-(
-	SELECT 
+SELECT 
 		r.restaurant_name,
-		-- o.order_date,
-		TO_CHAR(o.order_date, 'Day') as day,
-		COUNT(o.order_id) as total_orders,
-		RANK() OVER(PARTITION BY r.restaurant_name ORDER BY COUNT(o.order_id)  DESC) as rank
-	FROM orders as o
-	JOIN
-	restaurants as r
-	ON o.restaurant_id = r.restaurant_id
-	GROUP BY 1, 2
-	ORDER BY 1, 3 DESC
-	) as t1
-WHERE rank = 1;
+        DAYNAME(o.order_date) AS day_of_week,
+        COUNT(o.order_id) AS total_orders,
+		RANK() OVER(PARTITION BY r.restaurant_name ORDER BY COUNT(o.order_id)) AS ranks
+FROM orders AS o
+JOIN restaurants AS r
+ON o.restaurant_id = r.restaurant_id
+GROUP BY 1,2
+ORDER BY 1,3;
 ```
 
 ### 16. Customer Lifetime Value (CLV): 
@@ -497,13 +560,13 @@ WHERE rank = 1;
 
 ```sql
 SELECT 
-	o.customer_id,
-	c.customer_name,
-	SUM(o.total_amount) as CLV
-FROM orders as o
-JOIN customers as c
-ON o.customer_id = c.customer_id
-GROUP BY 1, 2;
+		o.customer_id,
+        c.customer_name,
+        SUM(o.total_amount) AS total_revenue
+FROM orders AS o
+JOIN customers AS c
+ON o.customer_id = c.customer_id 
+GROUP BY 1,2;
 ```
 
 ### 17. Monthly Sales Trends: 
@@ -511,10 +574,14 @@ GROUP BY 1, 2;
 
 ```sql
 SELECT 
-	EXTRACT(YEAR FROM order_date) as year,
-	EXTRACT(MONTH FROM order_date) as month,
-	SUM(total_amount) as total_sale,
-	LAG(SUM(total_amount), 1) OVER(ORDER BY EXTRACT(YEAR FROM order_date), EXTRACT(MONTH FROM order_date)) as prev_month_sale
+    EXTRACT(YEAR FROM order_date) as year,
+    EXTRACT(MONTH FROM order_date) as month,
+    SUM(total_amount) as total_sale,
+    LAG(SUM(total_amount), 1) 
+    OVER(
+        ORDER BY EXTRACT(YEAR FROM order_date),
+                 EXTRACT(MONTH FROM order_date)
+    ) as prev_month_sale
 FROM orders
 GROUP BY 1, 2;
 ```
@@ -523,35 +590,38 @@ GROUP BY 1, 2;
 -- Evaluate rider efficiency by determining average delivery times and identifying those with the lowest and highest averages.
 
 ```sql
-WITH new_table
-AS
-(
-	SELECT 
-		*,
-		d.rider_id as riders_id,
-		EXTRACT(EPOCH FROM (d.delivery_time - o.order_time + 
-		CASE WHEN d.delivery_time < o.order_time THEN INTERVAL '1 day' ELSE
-		INTERVAL '0 day' END))/60 as time_deliver
-	FROM orders as o
-	JOIN deliveries as d
-	ON o.order_id = d.order_id
-	WHERE d.delivery_status = 'Delivered'
-),
-
-riders_time
-AS
-
-(
-	SELECT 
-		riders_id,
-		AVG(time_deliver) avg_time
-	FROM new_table
-	GROUP BY 1
-)
-SELECT 
-	MIN(avg_time),
-	MAX(avg_time)
-FROM riders_time;
+SELECT
+    r.rider_id,
+    r.rider_name,
+    AVG(
+        CASE
+            WHEN d.delivery_time >= o.order_time 
+            THEN TIMESTAMPDIFF(MINUTE, o.order_time, d.delivery_time)
+            ELSE TIMESTAMPDIFF(MINUTE, o.order_time, ADDTIME(d.delivery_time, '24:00:00'))
+        END
+    ) AS avg_delivery_time_minutes,
+    MIN(
+        CASE
+            WHEN d.delivery_time >= o.order_time 
+            THEN TIMESTAMPDIFF(MINUTE, o.order_time, d.delivery_time)
+            ELSE TIMESTAMPDIFF(MINUTE, o.order_time, ADDTIME(d.delivery_time, '24:00:00'))
+        END
+    ) AS min_delivery_time_minutes,
+    MAX(
+        CASE
+            WHEN d.delivery_time >= o.order_time 
+            THEN TIMESTAMPDIFF(MINUTE, o.order_time, d.delivery_time)
+            ELSE TIMESTAMPDIFF(MINUTE, o.order_time, ADDTIME(d.delivery_time, '24:00:00'))
+        END
+    ) AS max_delivery_time_minutes
+FROM Orders o
+JOIN deliveries d
+    ON o.order_id = d.order_id
+JOIN riders r
+    ON d.rider_id = r.rider_id
+WHERE d.delivery_status = 'Delivered'
+GROUP BY r.rider_id, r.rider_name
+ORDER BY avg_delivery_time_minutes;
 ```
 
 ### 19. Order Item Popularity: 
@@ -561,40 +631,84 @@ FROM riders_time;
 SELECT 
 	order_item,
 	seasons,
-	COUNT(order_id) as total_orders
-FROM 
+	COUNT(order_id) AS total_orders
+FROM
 (
-SELECT 
-		*,
-		EXTRACT(MONTH FROM order_date) as month,
-		CASE 
-			WHEN EXTRACT(MONTH FROM order_date) BETWEEN 4 AND 6 THEN 'Spring'
-			WHEN EXTRACT(MONTH FROM order_date) > 6 AND 
-			EXTRACT(MONTH FROM order_date) < 9 THEN 'Summer'
-			ELSE 'Winter'
-		END as seasons
-	FROM orders
-) as t1
-GROUP BY 1, 2
+SELECT *,
+		EXTRACT(MONTH FROM order_date) AS month,
+        CASE
+			WHEN EXTRACT(MONTH FROM order_date) BETWEEN 4 AND 6 THEN "spring"
+             WHEN EXTRACT(MONTH FROM order_date) < 9 THEN "summer"
+            ELSE "winter"
+		END AS seasons
+FROM orders
+) AS t1
+GROUP BY 1,2
 ORDER BY 1, 3 DESC;
 ```
 
 ### 20. Rank each city based on the total revenue for last year 2023
 ```sql
-SELECT 
+SELECT
 	r.city,
-	SUM(total_amount) as total_revenue,
-	RANK() OVER(ORDER BY SUM(total_amount) DESC) as city_rank
-FROM orders as o
-JOIN
-restaurants as r
+    SUM(o.total_amount) AS total_revenue,
+    RANK() OVER(ORDER BY SUM(o.total_amount)DESC)
+FROM orders AS o
+JOIN restaurants AS r
 ON o.restaurant_id = r.restaurant_id
-GROUP BY 1;
+GROUP BY 1
+ORDER BY 2 DESC;
 ```
+
+## Key Insights Derived
+
+The project generated several business insights including:
+
+- Identification of peak ordering hours
+- Detection of customer churn behavior
+- Restaurant revenue comparison
+- Rider efficiency evaluation
+- Monthly sales growth tracking
+- Operational delivery analysis
+- City-wise business performance analysis
+- Customer ordering behavior analysis
+
+These insights can help businesses improve:
+
+- Delivery management
+- Customer retention
+- Resource allocation
+- Revenue optimization
+- Rider performance tracking
+- Restaurant partnership management
+
+## Challenges Faced During the Project
+
+Several practical challenges were encountered during project execution:
+
+- Foreign key constraint errors
+- Date and time format incompatibility
+- CSV import issues
+- Data type mismatches
+- Delivery time calculations crossing midnight
+- Handling null values
+- Query optimization for analytical reporting
+
+These challenges helped improve debugging, database management, and SQL troubleshooting skills.
 
 ## Conclusion
 
-This project highlights my ability to handle complex SQL queries and provides solutions to real-world business problems in the context of a food delivery service like Zomato. The approach taken here demonstrates a structured problem-solving methodology, data manipulation skills, and the ability to derive actionable insights from data.
+This project successfully demonstrates the practical application of SQL in solving real-world business problems for a food delivery platform. The analysis covered operational, financial, customer, restaurant, and rider-related insights using advanced SQL concepts and relational database techniques.
+
+The project strengthened understanding of:
+
+- Relational database management
+- Data analysis using SQL
+- Business intelligence reporting
+- Query optimization
+- Analytical problem solving
+
+Overall, this project reflects strong practical knowledge of SQL and showcases the ability to transform raw transactional data into meaningful business insights.
 
 ## Notice 
 All customer names and data used in this project are computer-generated using AI and random functions. They do not represent real data associated with Zomato or any other entity. This project is solely for learning and educational purposes, and any resemblance to actual persons, businesses, or events is purely coincidental.
