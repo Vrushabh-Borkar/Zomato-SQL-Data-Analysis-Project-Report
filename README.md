@@ -1,5 +1,5 @@
 
-# SQL-Based Data Analysis and Business Intelligence Project for Zomato Food Delivery Platform
+# SQL-Based Data Analysis and Business Intelligence Project for Zomato
 
 ## Project Overview
 
